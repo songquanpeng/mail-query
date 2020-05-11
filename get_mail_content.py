@@ -1,10 +1,9 @@
 import glob
-
 from email.header import decode_header, make_header
 from email.parser import BytesParser
 
 
-def parse(path):
+def parse(path: str) -> dict:
     with open(path, 'rb') as eml_file:
         parser = BytesParser()
         message = parser.parse(eml_file)
@@ -18,19 +17,26 @@ def parse(path):
         "to": receiver,
         "date": date,
         "content": "",
-        "attachments": [
-            {
-                "filename": "",
-                "content": ""
-            }
-        ]
+        "attachments": []
     }
+    for part in message.walk():
+        if not part.is_multipart():
+            file_name = part.get_filename()
+            if file_name:
+                file_name = str(make_header(decode_header(file_name)))
+                file_data = part.get_payload(decode=True)
+                mail["attachments"].append({"name": file_name, "content": file_data})
+                print(file_name)
     return mail
 
 
-if __name__ == '__main__':
+def main():
     files = glob.glob("./data/*.eml")
     for file in files:
         print(f"mail: {file}")
-        m = parse(file)
-        print(m)
+        mail = parse(file)
+        print(mail)
+
+
+if __name__ == '__main__':
+    main()
