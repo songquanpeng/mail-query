@@ -22,16 +22,16 @@ def parse(path: str) -> dict:
     content = ""
     last_is_plain_text = False
     for part in message.walk():
-        charset = part.get_charset()
-        print("charset: ", type(part))
-        # if not charset:
-        #     charset = "gb18030"
+        charset = part.get_content_charset()
+        print("charset: ", charset)
         if not part.is_multipart():
             content_type = part.get_content_type()
             file_name = part.get_filename()
             if file_name:
                 file_name = str(make_header(decode_header(file_name)))
                 file_data = part.get_payload(decode=True)
+                if file_name.endswith(".txt"):
+                    file_data = file_data.decode("utf-8")
                 mail["attachments"].append({"name": file_name, "content": file_data})
             else:
                 if not last_is_plain_text:
@@ -39,7 +39,7 @@ def parse(path: str) -> dict:
                         last_is_plain_text = True
                     content = part.get_payload(decode=True)
                     if charset:
-                        content.decode(charset)
+                        content = content.decode(charset)
 
     mail["content"] = content
     return mail

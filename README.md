@@ -2,7 +2,7 @@
 
 ## TODO List
 - [x] Generate eml file with annex for testing. (QQ mail website can export mail to eml.)
-- [ ] Use Python to extract information from email.
+- [x] Use Python to extract information from email.
 - [ ] Use Python to extract information from emails' attachments.
 - [ ] Content query.
     - [ ] Keyword query.
