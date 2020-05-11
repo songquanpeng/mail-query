@@ -4,6 +4,11 @@
 - [x] Generate eml file with annex for testing. (QQ mail website can export mail to eml.)
 - [x] Use Python to extract information from email.
 - [ ] Use Python to extract information from emails' attachments.
+    - [x] txt
+    - [ ] doc
+    - [ ] docx
+    - [ ] ppt
+    - [ ] excel
 - [ ] Content query.
     - [ ] Keyword query.
     - [ ] Fuzzy query.
