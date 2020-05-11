@@ -19,21 +19,35 @@ def parse(path: str) -> dict:
         "content": "",
         "attachments": []
     }
+    content = ""
+    last_is_plain_text = False
     for part in message.walk():
+        charset = part.get_charset()
+        print("charset: ", type(part))
+        # if not charset:
+        #     charset = "gb18030"
         if not part.is_multipart():
+            content_type = part.get_content_type()
             file_name = part.get_filename()
             if file_name:
                 file_name = str(make_header(decode_header(file_name)))
                 file_data = part.get_payload(decode=True)
                 mail["attachments"].append({"name": file_name, "content": file_data})
-                print(file_name)
+            else:
+                if not last_is_plain_text:
+                    if content_type in ['text/plain']:
+                        last_is_plain_text = True
+                    content = part.get_payload(decode=True)
+                    if charset:
+                        content.decode(charset)
+
+    mail["content"] = content
     return mail
 
 
 def main():
     files = glob.glob("./data/*.eml")
     for file in files:
-        print(f"mail: {file}")
         mail = parse(file)
         print(mail)
 
