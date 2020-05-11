@@ -1,8 +1,8 @@
-import sys
+import sys, os, subprocess
 from PyQt5.QtWidgets import (QApplication, QWidget,
                              QPushButton, QMessageBox,
                              QMainWindow, QLineEdit,
-                             QTextBrowser, QListView,
+                             QTextBrowser, QListWidget,
                              QFileDialog, QLabel
                              )
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QGridLayout
@@ -12,14 +12,17 @@ from PyQt5.QtCore import Qt
 
 class App(QWidget):
     def __init__(self):
-        # noinspection PyArgumentList
         super().__init__()
+
         self.directory = ""
         self.keyword = ""
 
         self.searchEdit = QLineEdit()
-        self.listView = QListView()
+        self.listWidget = QListWidget()
         self.dirPathEdit = QLineEdit()
+
+        self.dirPathEdit.textChanged.connect(self.on_dir_changed)
+        self.listWidget.itemClicked.connect(self.open_file)
 
         self.init_ui()
 
@@ -33,7 +36,8 @@ class App(QWidget):
         dirBrowseBtn = QPushButton("Browse")
         dirSelectBtn = QPushButton("Select")
 
-        dirBrowseBtn.clicked.connect(self.browse_file)
+        dirBrowseBtn.clicked.connect(self.browse_dir)
+        dirSelectBtn.clicked.connect(self.select_dir)
 
         grid = QGridLayout()
         grid.setSpacing(10)
@@ -44,13 +48,32 @@ class App(QWidget):
         grid.addWidget(searchLabel, 1, 0)
         grid.addWidget(self.searchEdit, 1, 1, 1, 2)
         grid.addWidget(searchBtn, 1, 3)
-        grid.addWidget(self.listView, 2, 0, 1, 4)
+        grid.addWidget(self.listWidget, 2, 0, 1, 4)
 
         self.setLayout(grid)
 
-    def browse_file(self):
+    def browse_dir(self):
         self.directory = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
         self.dirPathEdit.setText(self.directory)
+
+    def select_dir(self):
+        directory = self.directory
+        try:
+            dirList = os.listdir(directory)
+            self.listWidget.clear()
+            self.listWidget.addItems(dirList)
+        except OSError as e:
+            QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok, QMessageBox.Ok)
+
+    def open_file(self, item):
+        path = self.directory + "/" + item.text()
+        try:
+            os.startfile(path)
+        except OSError as e:
+            QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok, QMessageBox.Ok)
+
+    def on_dir_changed(self, text):
+        self.directory = text
 
     def closeEvent(self, QCloseEvent):
         reply = QMessageBox.question(self, "Message", "Are you sure to quit?",
