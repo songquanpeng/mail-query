@@ -13,6 +13,7 @@
     - [x] Keyword query.
     - [ ] Fuzzy query.
     - [ ] Similar text query.
+    - [ ] Support multi keywords
  - [ ] Use PyQt to create a GUI.
  - [ ] Package into an exe file.
  - [ ] Use multi-threaded / multi-process acceleration.

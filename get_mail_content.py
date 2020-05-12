@@ -43,7 +43,7 @@ def parse(path: str) -> dict:
                     content = part.get_payload(decode=True)
                     if charset:
                         content = content.decode(charset)
-
+    content = "" if content is None else content
     mail["content"] = content
     mail["attachments"] = attachments
     return mail
