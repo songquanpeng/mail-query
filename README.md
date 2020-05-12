@@ -10,7 +10,7 @@
     - [ ] ppt
     - [ ] excel
 - [ ] Content query.
-    - [ ] Keyword query.
+    - [x] Keyword query.
     - [ ] Fuzzy query.
     - [ ] Similar text query.
  - [ ] Use PyQt to create a GUI.

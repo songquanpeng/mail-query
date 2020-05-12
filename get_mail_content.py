@@ -11,6 +11,10 @@ def parse(path: str) -> dict:
         sender = str(make_header(decode_header(message.get("from"))))
         receiver = str(make_header(decode_header(message.get("to"))))
         date = message.get("date")
+        subject = "" if subject is None else subject
+        sender = "" if sender is None else sender
+        receiver = "" if receiver is None else receiver
+        date = "" if date is None else date
     mail = {
         "subject": subject,
         "from": sender,
