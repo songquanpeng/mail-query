@@ -1,9 +1,10 @@
 import glob
 import docx2txt
+import pandas as pd
 from email.header import decode_header, make_header
 from email.parser import BytesParser
 from io import StringIO
-
+from pptx import Presentation
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfdocument import PDFDocument
@@ -66,13 +67,14 @@ def process_attachment(name: str, data: bytes) -> str:
         except UnicodeDecodeError:
             print("unable to decode the given text by 'utf-8'")
     else:
-        with open("./temp", mode='wb') as temp:
+        temp_file_path = "./temp"
+        with open(temp_file_path, mode='wb') as temp:
             temp.write(data)
         if name.endswith(".docx"):
             result = docx2txt.process("./temp")
         elif name.endswith(".pdf"):
             output_string = StringIO()
-            with open("./temp", mode='rb') as pdf:
+            with open(temp_file_path, mode='rb') as pdf:
                 parser = PDFParser(pdf)
                 doc = PDFDocument(parser)
                 resource_manager = PDFResourceManager()
@@ -81,6 +83,18 @@ def process_attachment(name: str, data: bytes) -> str:
                 for page in PDFPage.create_pages(doc):
                     interpreter.process_page(page)
             result = output_string.getvalue()
+        elif name.endswith(".pptx"):
+            ppt = Presentation(temp_file_path)
+            for slide in ppt.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, "text"):
+                        result += shape.text
+        elif name.endswith(".xlsx"):
+            data = pd.ExcelFile(temp_file_path)
+            for sheet in data.sheet_names:
+                temp = data.parse(sheet)
+                result += str(temp.columns)
+            result += str(data.sheet_names)
     return result
 
 

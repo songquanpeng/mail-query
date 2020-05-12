@@ -45,7 +45,7 @@ def query(keyword: str, mails: list, limit=-1, option=None) -> list:
                 mail = mails[i]
                 count = 0
                 for attachment in mail["attachments"]:
-                    count = attachment[attribute].count(keyword)
+                    count += attachment[attribute].count(keyword)
                 scores[i] += count * weights[index]
     return sort_by_score(scores, limit)
 
@@ -55,16 +55,16 @@ def main():
     mails = []
     for file in files:
         mails.append(parse(file))
-    keyword = input("Please input keyword: ")
-    start = time.time()
-    result = query(keyword, mails)
-    end = time.time()
-    print(f"{len(result)} result{'' if len(result) <= 1 else 's'} ({round(end - start, 2)} seconds)")
-    for i in result:
-        print(mails[i]["subject"])
-    print()
+    while True:
+        keyword = input("Please input keyword: ")
+        start = time.time()
+        result = query(keyword, mails)
+        end = time.time()
+        print(f"{len(result)} result{'' if len(result) <= 1 else 's'} ({round(end - start, 2)} seconds)")
+        for i in result:
+            print(mails[i]["subject"])
+        print()
 
 
 if __name__ == '__main__':
-    while True:
-        main()
+    main()
