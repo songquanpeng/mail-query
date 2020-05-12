@@ -2,6 +2,14 @@ import glob
 import docx2txt
 from email.header import decode_header, make_header
 from email.parser import BytesParser
+from io import StringIO
+
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfdocument import PDFDocument
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.pdfpage import PDFPage
+from pdfminer.pdfparser import PDFParser
 
 
 def parse(path: str) -> dict:
@@ -51,7 +59,7 @@ def parse(path: str) -> dict:
 
 
 def process_attachment(name: str, data: bytes) -> str:
-    result = "unrecognized binary attachment"
+    result = ""
     if name.endswith(".txt"):
         try:
             result = data.decode("utf-8")
@@ -62,6 +70,17 @@ def process_attachment(name: str, data: bytes) -> str:
             temp.write(data)
         if name.endswith(".docx"):
             result = docx2txt.process("./temp")
+        elif name.endswith(".pdf"):
+            output_string = StringIO()
+            with open("./temp", mode='rb') as pdf:
+                parser = PDFParser(pdf)
+                doc = PDFDocument(parser)
+                resource_manager = PDFResourceManager()
+                device = TextConverter(resource_manager, output_string, laparams=LAParams())
+                interpreter = PDFPageInterpreter(resource_manager, device)
+                for page in PDFPage.create_pages(doc):
+                    interpreter.process_page(page)
+            result = output_string.getvalue()
     return result
 
 
