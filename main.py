@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 from PyQt5.QtWidgets import (QApplication, QWidget,
                              QPushButton, QMessageBox,
@@ -8,6 +9,9 @@ from PyQt5.QtWidgets import (QApplication, QWidget,
                              )
 from PyQt5.QtWidgets import QGridLayout
 
+from query import query
+from get_mail_content import parse
+
 
 class App(QWidget):
     def __init__(self):
@@ -15,6 +19,7 @@ class App(QWidget):
 
         self.directory = os.getcwd().replace("\\", "/") + "/data"
         self.keyword = ""
+        self.fileList = []
 
         self.dirPathEdit = QLineEdit()
         self.searchEdit = QLineEdit()
@@ -26,9 +31,10 @@ class App(QWidget):
         self.dirPathEdit.returnPressed.connect(self.select_dir)
         self.searchEdit.textChanged.connect(self.on_search_changed)
         self.searchEdit.returnPressed.connect(self.search)
-        self.listWidget.itemClicked.connect(self.open_file)
+        self.listWidget.itemDoubleClicked.connect(self.open_file)
 
         self.init_ui()
+        self.select_dir()
         self.searchEdit.setFocus()
 
     def init_ui(self):
@@ -60,15 +66,19 @@ class App(QWidget):
         if directory != "":
             self.directory = directory
             self.dirPathEdit.setText(self.directory)
+            self.select_dir()
             self.searchEdit.setFocus()
 
     def select_dir(self):
-        directory = self.directory
         try:
-            dirList = os.listdir(directory)
+            fileList = []
+            for file in os.listdir(self.directory):
+                if file.endswith(".eml"):
+                    fileList.append(file)
+            self.fileList = fileList
+            print(self.fileList)
             self.listWidget.clear()
-            self.listWidget.addItems(dirList)
-            self.searchEdit.setFocus()
+            self.listWidget.addItems(self.fileList)
         except OSError as e:
             QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok, QMessageBox.Ok)
 
@@ -80,7 +90,19 @@ class App(QWidget):
             QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok, QMessageBox.Ok)
 
     def search(self):
-        print(self.keyword)
+        try:
+            mails = []
+            for file in self.fileList:
+                mails.append(parse(self.directory + "/" + file))
+            start = time.time()
+            index = query(self.keyword, mails)
+            result = [self.fileList[i] for i in index]
+            self.listWidget.clear()
+            self.listWidget.addItems(result)
+            end = time.time()
+            print(index, end - start, "seconds")
+        except OSError as e:
+            QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok, QMessageBox.Ok)
 
     def on_dir_changed(self, text):
         self.directory = text
