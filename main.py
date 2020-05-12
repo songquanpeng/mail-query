@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (QApplication, QWidget,
 from PyQt5.QtWidgets import QGridLayout
 
 from query import query
-from get_mail_content import parse
+from util import parse
 
 
 class App(QWidget):
