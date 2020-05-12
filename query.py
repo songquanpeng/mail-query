@@ -59,7 +59,7 @@ def main():
     start = time.time()
     result = query(keyword, mails)
     end = time.time()
-    print(f"{len(result)} results ({round(end - start, 2)} seconds)")
+    print(f"{len(result)} result{'' if len(result) <= 1 else 's'} ({round(end - start, 2)} seconds)")
     for i in result:
         print(mails[i]["subject"])
     print()

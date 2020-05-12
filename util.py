@@ -1,4 +1,5 @@
 import glob
+import docx2txt
 from email.header import decode_header, make_header
 from email.parser import BytesParser
 
@@ -49,10 +50,19 @@ def parse(path: str) -> dict:
     return mail
 
 
-def process_attachment(name: str, data: bytes):
+def process_attachment(name: str, data: bytes) -> str:
+    result = "unrecognized binary attachment"
     if name.endswith(".txt"):
-        return data.decode("utf-8")
-    return data
+        try:
+            result = data.decode("utf-8")
+        except UnicodeDecodeError:
+            print("unable to decode the given text by 'utf-8'")
+    else:
+        with open("./temp", mode='wb') as temp:
+            temp.write(data)
+        if name.endswith(".docx"):
+            result = docx2txt.process("./temp")
+    return result
 
 
 def main():
