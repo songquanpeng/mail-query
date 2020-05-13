@@ -18,9 +18,7 @@ class App(QWidget):
         self.fileList = []
         self.options_names = ["Subject", "Sender", "Receiver", "Date", "Content",
                               "Attachment filename", "Attachment content"]
-
-        for name in self.options_names:
-            setattr(self, name, True)
+        self.options = [True for _ in range(len(self.options_names))]
 
         self.dirPathEdit = QLineEdit()
         self.searchEdit = QLineEdit()
@@ -54,11 +52,11 @@ class App(QWidget):
         hbox.setAlignment(Qt.AlignRight)
         hbox.setSpacing(5)
 
-        for name in self.options_names:
+        for index, name in enumerate(self.options_names):
             checkbox = QCheckBox()
-            checkbox.setObjectName(name)
+            checkbox.setObjectName(str(index))
             checkbox.stateChanged.connect(self.on_checkbox_changed)
-            checkbox.setCheckState(Qt.Checked)
+            checkbox.setCheckState(Qt.Checked if self.options[index] else Qt.Unchecked)
             label = QLabel(name)
             hbox.addWidget(label)
             hbox.addWidget(checkbox)
@@ -95,7 +93,7 @@ class App(QWidget):
                 if file.endswith(".eml"):
                     fileList.append(file)
             self.fileList = fileList
-            print(self.fileList)
+
             self.listWidget.clear()
             self.listWidget.addItems(self.fileList)
         except OSError as e:
@@ -116,7 +114,7 @@ class App(QWidget):
             for file in self.fileList:
                 mails.append(parse(self.directory + "/" + file))
             start = time.time()
-            index = query(self.keyword, mails)
+            index = query(self.keyword, mails, option=self.options)
             result = [self.fileList[i] for i in index]
             self.listWidget.clear()
             self.listWidget.addItems(result)
@@ -131,8 +129,10 @@ class App(QWidget):
         setattr(self, name, text)
 
     def on_checkbox_changed(self, check_state):
-        name = self.sender().objectName()
-        setattr(self, name, check_state)
+        options = self.options
+        index = int(self.sender().objectName())
+        options[index] = bool(check_state)
+        setattr(self, "options", options)
 
     def closeEvent(self, QCloseEvent):
         reply = QMessageBox.question(self, "Message", "Are you sure to quit?",
