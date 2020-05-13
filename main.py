@@ -2,12 +2,8 @@ import os
 import sys
 import time
 
-from PyQt5.QtWidgets import (QApplication, QWidget,
-                             QPushButton, QMessageBox,
-                             QLineEdit, QListWidget,
-                             QFileDialog, QLabel
-                             )
-from PyQt5.QtWidgets import QGridLayout
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
 
 from query import query
 from util import parse
@@ -20,16 +16,23 @@ class App(QWidget):
         self.directory = os.getcwd().replace("\\", "/") + "/data"
         self.keyword = ""
         self.fileList = []
+        self.options_names = ["Subject", "Sender", "Receiver", "Date", "Content",
+                              "Attachment filename", "Attachment content"]
+
+        for name in self.options_names:
+            setattr(self, name, True)
 
         self.dirPathEdit = QLineEdit()
         self.searchEdit = QLineEdit()
         self.listWidget = QListWidget()
 
         self.dirPathEdit.setText(self.directory)
+        self.dirPathEdit.setObjectName("directory")
+        self.searchEdit.setObjectName("keyword")
 
-        self.dirPathEdit.textChanged.connect(self.on_dir_changed)
+        self.dirPathEdit.textChanged.connect(self.on_edit_changed)
         self.dirPathEdit.returnPressed.connect(self.select_dir)
-        self.searchEdit.textChanged.connect(self.on_search_changed)
+        self.searchEdit.textChanged.connect(self.on_edit_changed)
         self.searchEdit.returnPressed.connect(self.search)
         self.listWidget.itemDoubleClicked.connect(self.open_file)
 
@@ -38,13 +41,27 @@ class App(QWidget):
         self.searchEdit.setFocus()
 
     def init_ui(self):
-        self.resize(800, 600)
+        self.resize(1200, 900)
         self.setWindowTitle("hello motherfucker")
 
         dirPathLabel = QLabel("Directory path:")
         dirBrowseBtn = QPushButton("Browse")
         searchLabel = QLabel("Keyword:")
         searchBtn = QPushButton("Search")
+        scopeLabel = QLabel("Search scope:")
+
+        hbox = QHBoxLayout()
+        hbox.setAlignment(Qt.AlignRight)
+        hbox.setSpacing(5)
+
+        for name in self.options_names:
+            checkbox = QCheckBox()
+            checkbox.setObjectName(name)
+            checkbox.stateChanged.connect(self.on_checkbox_changed)
+            checkbox.setCheckState(Qt.Checked)
+            label = QLabel(name)
+            hbox.addWidget(label)
+            hbox.addWidget(checkbox)
 
         dirBrowseBtn.clicked.connect(self.browse_dir)
         searchBtn.clicked.connect(self.search)
@@ -57,7 +74,9 @@ class App(QWidget):
         grid.addWidget(searchLabel, 1, 0)
         grid.addWidget(self.searchEdit, 1, 1)
         grid.addWidget(searchBtn, 1, 2)
-        grid.addWidget(self.listWidget, 2, 0, 1, 3)
+        grid.addWidget(scopeLabel, 2, 0)
+        grid.addItem(hbox, 2, 1, 1, 2)
+        grid.addWidget(self.listWidget, 3, 0, 1, 3)
 
         self.setLayout(grid)
 
@@ -80,14 +99,16 @@ class App(QWidget):
             self.listWidget.clear()
             self.listWidget.addItems(self.fileList)
         except OSError as e:
-            QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok, QMessageBox.Ok)
+            QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok,
+                                 QMessageBox.Ok)
 
     def open_file(self, item):
         path = self.directory + "/" + item.text()
         try:
             os.startfile(path)
         except OSError as e:
-            QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok, QMessageBox.Ok)
+            QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok,
+                                 QMessageBox.Ok)
 
     def search(self):
         try:
@@ -102,13 +123,16 @@ class App(QWidget):
             end = time.time()
             print(index, end - start, "seconds")
         except OSError as e:
-            QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok, QMessageBox.Ok)
+            QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok,
+                                 QMessageBox.Ok)
 
-    def on_dir_changed(self, text):
-        self.directory = text
+    def on_edit_changed(self, text):
+        name = self.sender().objectName()
+        setattr(self, name, text)
 
-    def on_search_changed(self, text):
-        self.keyword = text
+    def on_checkbox_changed(self, check_state):
+        name = self.sender().objectName()
+        setattr(self, name, check_state)
 
     def closeEvent(self, QCloseEvent):
         reply = QMessageBox.question(self, "Message", "Are you sure to quit?",
