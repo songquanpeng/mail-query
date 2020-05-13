@@ -4,6 +4,7 @@ import time
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from PyQt5.QtGui import QIntValidator
 
 from query import query
 from util import parse
@@ -19,6 +20,7 @@ class App(QWidget):
         self.options_names = ["Subject", "Sender", "Receiver", "Date", "Content",
                               "Attachment filename", "Attachment content"]
         self.options = [True for _ in range(len(self.options_names))]
+        self.limit = -1
 
         self.dirPathEdit = QLineEdit()
         self.searchEdit = QLineEdit()
@@ -44,25 +46,44 @@ class App(QWidget):
 
         dirPathLabel = QLabel("Directory path:")
         dirBrowseBtn = QPushButton("Browse")
+
         searchLabel = QLabel("Keyword:")
         searchBtn = QPushButton("Search")
+
         scopeLabel = QLabel("Search scope:")
 
-        hbox = QHBoxLayout()
-        hbox.setAlignment(Qt.AlignRight)
-        hbox.setSpacing(5)
+        otherLabel = QLabel("Other options:")
+        limitLabel = QLabel("Maximum results number:")
+        limitEdit = QLineEdit()
+        limitEdit.setValidator(QIntValidator())
+        limitEdit.setObjectName("limit")
+        regexpLabel = QLabel("Regexp")
+        regexpCheckbox = QCheckBox()
+
+        dirBrowseBtn.clicked.connect(self.browse_dir)
+        searchBtn.clicked.connect(self.search)
+        limitEdit.textChanged.connect(self.on_edit_changed)
+
+        otherHBox = QHBoxLayout()
+        otherHBox.setSpacing(10)
+        otherHBox.addWidget(limitLabel)
+        otherHBox.addWidget(limitEdit)
+        otherHBox.addSpacing(50)
+        otherHBox.addWidget(regexpLabel)
+        otherHBox.addWidget(regexpCheckbox)
+        otherHBox.addStretch()
+
+        optionsHBox = QHBoxLayout()
+        optionsHBox.setSpacing(10)
 
         for index, name in enumerate(self.options_names):
             checkbox = QCheckBox()
             checkbox.setObjectName(str(index))
-            checkbox.stateChanged.connect(self.on_checkbox_changed)
+            checkbox.stateChanged.connect(self.on_options_changed)
             checkbox.setCheckState(Qt.Checked if self.options[index] else Qt.Unchecked)
             label = QLabel(name)
-            hbox.addWidget(label)
-            hbox.addWidget(checkbox)
-
-        dirBrowseBtn.clicked.connect(self.browse_dir)
-        searchBtn.clicked.connect(self.search)
+            optionsHBox.addWidget(label)
+            optionsHBox.addWidget(checkbox)
 
         grid = QGridLayout()
         grid.setSpacing(10)
@@ -73,8 +94,10 @@ class App(QWidget):
         grid.addWidget(self.searchEdit, 1, 1)
         grid.addWidget(searchBtn, 1, 2)
         grid.addWidget(scopeLabel, 2, 0)
-        grid.addItem(hbox, 2, 1, 1, 2)
-        grid.addWidget(self.listWidget, 3, 0, 1, 3)
+        grid.addItem(optionsHBox, 2, 1, 1, 2)
+        grid.addWidget(otherLabel, 3, 0)
+        grid.addItem(otherHBox, 3, 1, 1, 2)
+        grid.addWidget(self.listWidget, 4, 0, 1, 3)
 
         self.setLayout(grid)
 
@@ -114,7 +137,7 @@ class App(QWidget):
             for file in self.fileList:
                 mails.append(parse(self.directory + "/" + file))
             start = time.time()
-            index = query(self.keyword, mails, option=self.options)
+            index = query(self.keyword, mails, int(self.limit), self.options)
             result = [self.fileList[i] for i in index]
             self.listWidget.clear()
             self.listWidget.addItems(result)
@@ -123,12 +146,15 @@ class App(QWidget):
         except OSError as e:
             QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok,
                                  QMessageBox.Ok)
+        except ValueError:
+            QMessageBox.critical(self, "Error", "Limit number must be valid integer",
+                                 QMessageBox.Ok, QMessageBox.Ok)
 
     def on_edit_changed(self, text):
         name = self.sender().objectName()
         setattr(self, name, text)
 
-    def on_checkbox_changed(self, check_state):
+    def on_options_changed(self, check_state):
         options = self.options
         index = int(self.sender().objectName())
         options[index] = bool(check_state)
