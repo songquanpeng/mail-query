@@ -63,6 +63,7 @@ class App(QWidget):
         dirBrowseBtn.clicked.connect(self.browse_dir)
         searchBtn.clicked.connect(self.search)
         limitEdit.textChanged.connect(self.on_edit_changed)
+        limitEdit.setText("-1")
 
         otherHBox = QHBoxLayout()
         otherHBox.setSpacing(10)
@@ -147,7 +148,7 @@ class App(QWidget):
             QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok,
                                  QMessageBox.Ok)
         except ValueError:
-            QMessageBox.critical(self, "Error", "Limit number must be valid integer",
+            QMessageBox.critical(self, "Error", "Limit number must be valid integer.",
                                  QMessageBox.Ok, QMessageBox.Ok)
 
     def on_edit_changed(self, text):
