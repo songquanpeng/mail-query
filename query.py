@@ -27,6 +27,8 @@ def query(keyword: str, mails: list, limit=-1, option=None) -> list:
     :param option: a seven items boolean list, indicates whether the corresponding attributes should be considered
     :return: an index list
     """
+    start = time.time()
+    print("Processing query ...", end=" ")
     limit = len(mails) if limit is -1 else limit
     option = [True for _ in range(len(weights))] if option is None else option
     assert len(option) == len(attributes)
@@ -37,7 +39,10 @@ def query(keyword: str, mails: list, limit=-1, option=None) -> list:
         works.append(work)
     pool.shutdown()
     scores = [work.result() for work in works]
-    return sort_by_score(scores, limit)
+    result = sort_by_score(scores, limit)
+    end = time.time()
+    print(f"Done, time cost: {end-start}")
+    return result
 
 
 def calculate_score(keyword: str, mail: dict, option: list) -> int:
