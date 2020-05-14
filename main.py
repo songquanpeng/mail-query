@@ -2,21 +2,69 @@ import os
 import sys
 import time
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PyQt5.QtWidgets import QLineEdit, QWidget, QListWidget, QLabel, QPushButton, QCheckBox, \
+    QHBoxLayout, QGridLayout, QFileDialog, QMessageBox, QApplication
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QIntValidator
 
 from query import query
 from util import parse
 
 
+class LoadThread(QThread):
+    trigger = pyqtSignal(str)
+
+    def __init__(self, directory):
+        super(LoadThread, self).__init__()
+        self.directory = directory
+        self.fileList = []
+        self.mails = []
+
+    def run(self):
+        try:
+            fileList = []
+            for file in os.listdir(self.directory):
+                if file.endswith(".eml"):
+                    fileList.append(file)
+            self.fileList = fileList
+
+            mails = []
+            for file in self.fileList:
+                mails.append(parse(self.directory + "/" + file))
+            self.mails = mails
+
+            self.trigger.emit("success")
+        except OSError as e:
+            self.trigger.emit(e.strerror)
+
+
+class SearchThread(QThread):
+    trigger = pyqtSignal()
+
+    def __init__(self, keyword, mails, limit, options):
+        super(SearchThread, self).__init__()
+        self.index = []
+        self.keyword = keyword
+        self.mails = mails
+        self.limit = limit
+        self.options = options
+
+    def run(self):
+        self.index = query(self.keyword, self.mails, self.limit, self.options)
+        self.trigger.emit()
+
+
 class App(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.load_thread = None
+        self.search_thread = None
+
         self.directory = os.getcwd().replace("\\", "/") + "/data"
         self.keyword = ""
         self.fileList = []
+        self.mails = []
         self.options_names = ["Subject", "Sender", "Receiver", "Date", "Content",
                               "Attachment filename", "Attachment content"]
         self.options = [True for _ in range(len(self.options_names))]
@@ -111,18 +159,9 @@ class App(QWidget):
             self.searchEdit.setFocus()
 
     def select_dir(self):
-        try:
-            fileList = []
-            for file in os.listdir(self.directory):
-                if file.endswith(".eml"):
-                    fileList.append(file)
-            self.fileList = fileList
-
-            self.listWidget.clear()
-            self.listWidget.addItems(self.fileList)
-        except OSError as e:
-            QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok,
-                                 QMessageBox.Ok)
+        self.load_thread = LoadThread(self.directory)
+        self.load_thread.trigger.connect(self.on_load_thread_returned)
+        self.load_thread.start()
 
     def open_file(self, item):
         path = self.directory + "/" + item.text()
@@ -134,22 +173,28 @@ class App(QWidget):
 
     def search(self):
         try:
-            mails = []
-            for file in self.fileList:
-                mails.append(parse(self.directory + "/" + file))
-            start = time.time()
-            index = query(self.keyword, mails, int(self.limit), self.options)
-            result = [self.fileList[i] for i in index]
-            self.listWidget.clear()
-            self.listWidget.addItems(result)
-            end = time.time()
-            print(index, end - start, "seconds")
-        except OSError as e:
-            QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok,
-                                 QMessageBox.Ok)
+            self.search_thread = SearchThread(self.keyword, self.mails, int(self.limit),
+                                              self.options)
+            self.search_thread.trigger.connect(self.on_search_thread_returned)
+            self.search_thread.start()
         except ValueError:
             QMessageBox.critical(self, "Error", "Limit number must be valid integer.",
                                  QMessageBox.Ok, QMessageBox.Ok)
+
+    def on_load_thread_returned(self, message):
+        if message == "success":
+            self.fileList = self.load_thread.fileList
+            self.mails = self.load_thread.mails
+            self.listWidget.clear()
+            self.listWidget.addItems(self.fileList)
+        else:
+            QMessageBox.critical(self, "Error", message, QMessageBox.Ok, QMessageBox.Ok)
+
+    def on_search_thread_returned(self):
+        index = self.search_thread.index
+        result = [self.fileList[i] for i in index]
+        self.listWidget.clear()
+        self.listWidget.addItems(result)
 
     def on_edit_changed(self, text):
         name = self.sender().objectName()
