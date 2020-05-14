@@ -20,5 +20,7 @@
  - [x] Use PyQt to create a GUI.
  - [ ] Package into an exe file.
  - [ ] Use multi-threaded / multi-process acceleration.
+    - [ ] Separate the  UI & query part first.
+    - [x] Use multi-processes accelerate the query.
  - [ ] Make full use of the given memory to speed up the query.
  - [ ] Use FastAPI and Vue to create a Website application.

@@ -1,6 +1,7 @@
 import glob
 import time
 from util import parse
+from concurrent.futures import ProcessPoolExecutor
 
 # priority: subject > form, to, date > content > attachments' filename > attachments' content
 attributes = ['subject', 'from', 'to', 'date', 'content', 'name', 'content']
@@ -29,32 +30,44 @@ def query(keyword: str, mails: list, limit=-1, option=None) -> list:
     limit = len(mails) if limit is -1 else limit
     option = [True for _ in range(len(weights))] if option is None else option
     assert len(option) == len(attributes)
-    scores = [0 for x in range(len(mails))]
+    pool = ProcessPoolExecutor()
+    works = []
+    for mail in mails:
+        work = pool.submit(calculate_score, keyword, mail, option)
+        works.append(work)
+    pool.shutdown()
+    scores = [work.result() for work in works]
+    return sort_by_score(scores, limit)
+
+
+def calculate_score(keyword: str, mail: dict, option: list) -> int:
+    score = 0
     for index in range(len(attributes)):
         attribute = attributes[index]
         enable = option[index]
         if not enable:
             continue
         if index < 5:
-            for i in range(len(mails)):
-                mail = mails[i]
-                count = mail[attribute].count(keyword)
-                scores[i] += count * weights[index]
+            count = mail[attribute].count(keyword)
+            score += count * weights[index]
         else:
-            for i in range(len(mails)):
-                mail = mails[i]
-                count = 0
-                for attachment in mail["attachments"]:
-                    count += attachment[attribute].count(keyword)
-                scores[i] += count * weights[index]
-    return sort_by_score(scores, limit)
+            count = 0
+            for attachment in mail["attachments"]:
+                count += attachment[attribute].count(keyword)
+            score += count * weights[index]
+    return score
 
 
 def main():
     files = glob.glob("./data/*.eml")
     mails = []
+    print("Start parse files...")
+    start = time.time()
     for file in files:
         mails.append(parse(file))
+    end = time.time()
+    print("Done.")
+    print(f"Time cost: {end-start}")
     while True:
         keyword = input("Please input keyword: ")
         start = time.time()
