@@ -1,5 +1,6 @@
 import glob
 import docx2txt
+import database
 import pandas as pd
 from email.header import decode_header, make_header
 from email.parser import BytesParser
@@ -31,7 +32,8 @@ def parse(path: str) -> dict:
         "to": receiver,
         "date": date,
         "content": "",
-        "attachments": []
+        "attachments": [],
+        "path": path
     }
     content = ""
     attachments = []
@@ -100,9 +102,11 @@ def process_attachment(name: str, data: bytes) -> str:
 
 def main():
     files = glob.glob("./data/*.eml")
+    database.init()
     for file in files:
         mail = parse(file)
-        print(mail)
+        database.insert(mail)
+    database.close()
 
 
 if __name__ == '__main__':
