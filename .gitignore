@@ -5,3 +5,6 @@
 data
 temp*
 data.db
+build
+dist
+main.spec

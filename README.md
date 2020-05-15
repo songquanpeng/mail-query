@@ -24,3 +24,18 @@
     - [x] Use multi-processes accelerate the query.
  - [ ] Make full use of the given memory to speed up the query.
  - [ ] Use FastAPI and Vue to create a Website application.
+ 
+ ## Build
+ ```shell script
+pip install pyinstaller
+pyinstaller -F -w main.py
+```
+And add this in the generated `main.spec`:
+```python
+import sys
+sys.setrecursionlimit(5000)
+```
+Then run:
+```
+pyinstaller main.spec
+```
