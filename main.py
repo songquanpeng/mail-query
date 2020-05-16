@@ -84,6 +84,7 @@ class App(QWidget):
         self.statusBar = QStatusBar()
 
         self.searchEdit.setObjectName("keyword")
+        self.searchEdit.setPlaceholderText("Input keyword to search...")
 
         self.searchEdit.textChanged.connect(self.on_edit_changed)
         self.searchEdit.returnPressed.connect(self.search)
@@ -103,11 +104,9 @@ class App(QWidget):
         otherLabel = QLabel("Other options:")
         limitLabel = QLabel("Maximum results number:")
         limitEdit = QLineEdit()
+
         limitEdit.setValidator(QIntValidator())
         limitEdit.setObjectName("limit")
-        regexpLabel = QLabel("Regexp")
-        regexpCheckbox = QCheckBox()
-
         limitEdit.textChanged.connect(self.on_edit_changed)
         limitEdit.setText("-1")
 
@@ -115,10 +114,6 @@ class App(QWidget):
         otherHBox.setSpacing(10)
         otherHBox.addWidget(limitLabel)
         otherHBox.addWidget(limitEdit)
-        otherHBox.addSpacing(50)
-        otherHBox.addWidget(regexpLabel)
-        otherHBox.addWidget(regexpCheckbox)
-        otherHBox.addStretch()
 
         optionsHBox = QHBoxLayout()
         optionsHBox.setSpacing(10)
@@ -230,18 +225,40 @@ class MainWindow(QMainWindow):
 
     def init_ui(self):
         self.resize(1200, 900)
-        self.setWindowTitle("hello motherfucker")
+        self.setWindowTitle("Quick Mail Query")
 
         addFilesAction = QAction("Add &files", self)
         addDirAction = QAction("Add &directory", self)
+        helpAction = QAction("&Help", self)
+        aboutAction = QAction("&About", self)
 
         addFilesAction.triggered.connect(self.app.browse_files)
         addDirAction.triggered.connect(self.app.browse_dir)
+        helpAction.triggered.connect(self.show_help)
+        aboutAction.triggered.connect(self.show_about)
 
         menuBar = self.menuBar()
         fileMenu = menuBar.addMenu('&File')
         fileMenu.addAction(addFilesAction)
         fileMenu.addAction(addDirAction)
+
+        aboutMenu = menuBar.addMenu('&About')
+        aboutMenu.addAction(helpAction)
+        aboutMenu.addSeparator()
+        aboutMenu.addAction(aboutAction)
+
+    def show_help(self):
+        QMessageBox.information(self, "Help",
+                                'Before querying, you need to import the files to the system '
+                                'first: click the "File" menu, select eml files or the directory '
+                                'that contains eml files.\n'
+                                , QMessageBox.Ok)
+
+    def show_about(self):
+        QMessageBox.information(self, "About", "<h3>Quick Mail Query</h3>"
+                                               "<a href='https://github.com/"
+                                               "songquanpeng/mail-query'>Github Repo</a>",
+                                QMessageBox.Close)
 
     def closeEvent(self, QCloseEvent):
         reply = QMessageBox.question(self, "Message", "Are you sure to quit?",
