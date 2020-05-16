@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QLineEdit, QWidget, QListWidget, QLabel, QPushButton
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QIntValidator
 
-from query import query
+from database import init, close, insert, query
 from util import parse
 
 
@@ -18,7 +18,6 @@ class LoadThread(QThread):
         super(LoadThread, self).__init__()
         self.directory = directory
         self.fileList = []
-        self.mails = []
 
     def run(self):
         try:
@@ -28,10 +27,11 @@ class LoadThread(QThread):
                     fileList.append(file)
             self.fileList = fileList
 
-            mails = []
+            init()
             for file in self.fileList:
-                mails.append(parse(self.directory + "/" + file))
-            self.mails = mails
+                mail = parse(self.directory + "/" + file)
+                insert(mail)
+            close()
 
             self.trigger.emit("success")
         except OSError as e:
@@ -41,16 +41,17 @@ class LoadThread(QThread):
 class SearchThread(QThread):
     trigger = pyqtSignal()
 
-    def __init__(self, keyword, mails, limit, options):
+    def __init__(self, keyword, limit, options):
         super(SearchThread, self).__init__()
-        self.index = []
+        self.result = []
         self.keyword = keyword
-        self.mails = mails
         self.limit = limit
         self.options = options
 
     def run(self):
-        self.index = query(self.keyword, self.mails, self.limit, self.options)
+        init()
+        self.result = query(self.keyword, self.limit, self.options)
+        close()
         self.trigger.emit()
 
 
@@ -64,7 +65,6 @@ class App(QWidget):
         self.directory = os.getcwd().replace("\\", "/") + "/data"
         self.keyword = ""
         self.fileList = []
-        self.mails = []
         self.options_names = ["Subject", "Sender", "Receiver", "Date", "Content",
                               "Attachment filename", "Attachment content"]
         self.options = [True for _ in range(len(self.options_names))]
@@ -89,7 +89,7 @@ class App(QWidget):
         self.listWidget.itemDoubleClicked.connect(self.open_file)
 
         self.init_ui()
-        self.select_dir()
+        self.statusBar.showMessage("Input keyword to query.")
         self.searchEdit.setFocus()
 
     def init_ui(self):
@@ -174,8 +174,7 @@ class App(QWidget):
 
     def search(self):
         try:
-            self.search_thread = SearchThread(self.keyword, self.mails, int(self.limit),
-                                              self.options)
+            self.search_thread = SearchThread(self.keyword, int(self.limit), self.options)
             self.search_thread.trigger.connect(self.on_search_thread_returned)
             self.statusBar.showMessage("Processing query...")
             self.searchBtn.setEnabled(False)
@@ -188,8 +187,7 @@ class App(QWidget):
     def on_load_thread_returned(self, message):
         if message == "success":
             self.fileList = self.load_thread.fileList
-            self.mails = self.load_thread.mails
-            if not len(self.mails):
+            if not len(self.fileList):
                 self.statusBar.showMessage("No eml file detected in given directory.")
             else:
                 used_time = time.time() - self.timer
@@ -201,8 +199,9 @@ class App(QWidget):
 
     def on_search_thread_returned(self):
         used_time = time.time() - self.timer
-        index = self.search_thread.index
-        result = [self.fileList[i] for i in index]
+        result = self.search_thread.result
+        for i in range(len(result)):
+            result[i] = os.path.basename(result[i])
         self.listWidget.clear()
         self.listWidget.addItems(result)
         self.searchBtn.setText("Search")
