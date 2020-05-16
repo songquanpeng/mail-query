@@ -183,13 +183,13 @@ class App(QWidget):
 
     def on_load_thread_returned(self, message):
         if message == "success":
-            print(self.load_thread.fileList)
             fileList = self.load_thread.fileList
             if not len(fileList):
                 self.statusBar.showMessage("No eml file detected in given directory.")
             else:
                 used_time = time.time() - self.timer
-                self.statusBar.showMessage("Loaded done in " + str(used_time) + " seconds.")
+                self.statusBar.showMessage("Loaded " + str(len(fileList)) + " files, done in " +
+                                           str(used_time) + " seconds.")
             self.listWidget.clear()
             self.listWidget.addItems(fileList)
         else:
