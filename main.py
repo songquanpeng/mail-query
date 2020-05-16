@@ -3,7 +3,7 @@ import sys
 import time
 
 from PyQt5.QtWidgets import QLineEdit, QWidget, QListWidget, QLabel, QPushButton, QCheckBox, \
-    QHBoxLayout, QGridLayout, QFileDialog, QMessageBox, QApplication
+    QHBoxLayout, QGridLayout, QFileDialog, QMessageBox, QApplication, QStatusBar
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QIntValidator
 
@@ -73,6 +73,7 @@ class App(QWidget):
         self.dirPathEdit = QLineEdit()
         self.searchEdit = QLineEdit()
         self.listWidget = QListWidget()
+        self.statusBar = QStatusBar()
 
         self.dirPathEdit.setText(self.directory)
         self.dirPathEdit.setObjectName("directory")
@@ -147,6 +148,7 @@ class App(QWidget):
         grid.addWidget(otherLabel, 3, 0)
         grid.addItem(otherHBox, 3, 1, 1, 2)
         grid.addWidget(self.listWidget, 4, 0, 1, 3)
+        grid.addWidget(self.statusBar, 5, 0, 1, 3)
 
         self.setLayout(grid)
 
