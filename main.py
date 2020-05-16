@@ -3,7 +3,8 @@ import sys
 import time
 
 from PyQt5.QtWidgets import QLineEdit, QWidget, QListWidget, QLabel, QPushButton, QCheckBox, \
-    QHBoxLayout, QGridLayout, QFileDialog, QMessageBox, QApplication, QStatusBar, QMainWindow
+    QHBoxLayout, QGridLayout, QFileDialog, QMessageBox, QApplication, QStatusBar, QMainWindow, \
+    QAction
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QIntValidator
 
@@ -14,22 +15,30 @@ from util import parse
 class LoadThread(QThread):
     trigger = pyqtSignal(str)
 
-    def __init__(self, directory):
+    def __init__(self, files):
         super(LoadThread, self).__init__()
-        self.directory = directory
         self.fileList = []
+        self.files = files
 
     def run(self):
         try:
+            files = self.files
             fileList = []
-            for file in os.listdir(self.directory):
-                if file.endswith(".eml"):
-                    fileList.append(file)
+            if type(files) is str:
+                for file in os.listdir(files):
+                    if file.endswith(".eml"):
+                        fileList.append(files + "/" + file)
+            elif type(files) is list:
+                fileList = files
+            else:
+                self.trigger.emit("Load files failed.")
+                return
+
             self.fileList = fileList
 
             init()
             for file in self.fileList:
-                mail = parse(self.directory + "/" + file)
+                mail = parse(file)
                 insert(mail)
             close()
 
@@ -62,27 +71,20 @@ class App(QWidget):
         self.load_thread = None
         self.search_thread = None
 
-        self.directory = os.getcwd().replace("\\", "/") + "/data"
         self.keyword = ""
-        self.fileList = []
         self.options_names = ["Subject", "Sender", "Receiver", "Date", "Content",
                               "Attachment filename", "Attachment content"]
         self.options = [True for _ in range(len(self.options_names))]
         self.limit = -1
         self.timer = time.time()
 
-        self.dirPathEdit = QLineEdit()
         self.searchEdit = QLineEdit()
         self.searchBtn = QPushButton("Search")
         self.listWidget = QListWidget()
         self.statusBar = QStatusBar()
 
-        self.dirPathEdit.setText(self.directory)
-        self.dirPathEdit.setObjectName("directory")
         self.searchEdit.setObjectName("keyword")
 
-        self.dirPathEdit.textChanged.connect(self.on_edit_changed)
-        self.dirPathEdit.returnPressed.connect(self.select_dir)
         self.searchEdit.textChanged.connect(self.on_edit_changed)
         self.searchEdit.returnPressed.connect(self.search)
         self.searchBtn.clicked.connect(self.search)
@@ -93,8 +95,6 @@ class App(QWidget):
         self.searchEdit.setFocus()
 
     def init_ui(self):
-        dirPathLabel = QLabel("Directory path:")
-        dirBrowseBtn = QPushButton("Browse")
 
         searchLabel = QLabel("Keyword:")
 
@@ -108,7 +108,6 @@ class App(QWidget):
         regexpLabel = QLabel("Regexp")
         regexpCheckbox = QCheckBox()
 
-        dirBrowseBtn.clicked.connect(self.browse_dir)
         limitEdit.textChanged.connect(self.on_edit_changed)
         limitEdit.setText("-1")
 
@@ -135,9 +134,6 @@ class App(QWidget):
 
         grid = QGridLayout()
         grid.setSpacing(10)
-        grid.addWidget(dirPathLabel, 0, 0)
-        grid.addWidget(self.dirPathEdit, 0, 1)
-        grid.addWidget(dirBrowseBtn, 0, 2, 1, 1)
         grid.addWidget(searchLabel, 1, 0)
         grid.addWidget(self.searchEdit, 1, 1)
         grid.addWidget(self.searchBtn, 1, 2)
@@ -150,24 +146,30 @@ class App(QWidget):
 
         self.setLayout(grid)
 
-    def browse_dir(self):
-        directory = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-        if directory != "":
-            self.directory = directory
-            self.dirPathEdit.setText(self.directory)
-            self.select_dir()
-            self.searchEdit.setFocus()
+    def browse_files(self):
+        fileList = QFileDialog().getOpenFileNames(self, "Select .eml files", "",
+                                                  "E-mail files (*.eml)")[0]
+        if len(fileList) != 0:
+            self.load_files(fileList)
+        else:
+            self.statusBar.showMessage("Add files canceled.")
 
-    def select_dir(self):
-        self.load_thread = LoadThread(self.directory)
+    def browse_dir(self):
+        directory = QFileDialog.getExistingDirectory(self, "Select Directory")
+        if directory != "":
+            self.load_files(directory)
+        else:
+            self.statusBar.showMessage("Add directory canceled.")
+
+    def load_files(self, files):
+        self.load_thread = LoadThread(files)
         self.load_thread.trigger.connect(self.on_load_thread_returned)
         self.timer = time.time()
         self.load_thread.start()
 
     def open_file(self, item):
-        path = self.directory + "/" + item.text()
         try:
-            os.startfile(path)
+            os.startfile(item.text())
         except OSError as e:
             QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok,
                                  QMessageBox.Ok)
@@ -186,22 +188,21 @@ class App(QWidget):
 
     def on_load_thread_returned(self, message):
         if message == "success":
-            self.fileList = self.load_thread.fileList
-            if not len(self.fileList):
+            print(self.load_thread.fileList)
+            fileList = self.load_thread.fileList
+            if not len(fileList):
                 self.statusBar.showMessage("No eml file detected in given directory.")
             else:
                 used_time = time.time() - self.timer
                 self.statusBar.showMessage("Loaded done in " + str(used_time) + " seconds.")
             self.listWidget.clear()
-            self.listWidget.addItems(self.fileList)
+            self.listWidget.addItems(fileList)
         else:
             QMessageBox.critical(self, "Error", message, QMessageBox.Ok, QMessageBox.Ok)
 
     def on_search_thread_returned(self):
         used_time = time.time() - self.timer
         result = self.search_thread.result
-        for i in range(len(result)):
-            result[i] = os.path.basename(result[i])
         self.listWidget.clear()
         self.listWidget.addItems(result)
         self.searchBtn.setText("Search")
@@ -219,6 +220,29 @@ class App(QWidget):
         options[index] = bool(check_state)
         setattr(self, "options", options)
 
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super(MainWindow, self).__init__()
+        self.app = App()
+        self.setCentralWidget(self.app)
+        self.init_ui()
+
+    def init_ui(self):
+        self.resize(1200, 900)
+        self.setWindowTitle("hello motherfucker")
+
+        addFilesAction = QAction("Add &files", self)
+        addDirAction = QAction("Add &directory", self)
+
+        addFilesAction.triggered.connect(self.app.browse_files)
+        addDirAction.triggered.connect(self.app.browse_dir)
+
+        menuBar = self.menuBar()
+        fileMenu = menuBar.addMenu('&File')
+        fileMenu.addAction(addFilesAction)
+        fileMenu.addAction(addDirAction)
+
     def closeEvent(self, QCloseEvent):
         reply = QMessageBox.question(self, "Message", "Are you sure to quit?",
                                      QMessageBox.Yes | QMessageBox.No,
@@ -227,16 +251,6 @@ class App(QWidget):
             QCloseEvent.accept()
         else:
             QCloseEvent.ignore()
-
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super(MainWindow, self).__init__()
-
-        self.resize(1200, 900)
-        self.setWindowTitle("hello motherfucker")
-
-        self.setCentralWidget(App())
 
 
 if __name__ == '__main__':
