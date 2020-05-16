@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QLineEdit, QWidget, QListWidget, QLabel, QPushButton
     QHBoxLayout, QGridLayout, QFileDialog, QMessageBox, QApplication, QStatusBar, QMainWindow, \
     QAction
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QIntValidator
+from PyQt5.QtGui import QIntValidator, QIcon
 
 from database import init, close, insert, query
 from util import parse
@@ -114,6 +114,7 @@ class App(QWidget):
         otherHBox.setSpacing(10)
         otherHBox.addWidget(limitLabel)
         otherHBox.addWidget(limitEdit)
+        otherHBox.addStretch()
 
         optionsHBox = QHBoxLayout()
         optionsHBox.setSpacing(10)
@@ -226,6 +227,7 @@ class MainWindow(QMainWindow):
     def init_ui(self):
         self.resize(1200, 900)
         self.setWindowTitle("Quick Mail Query")
+        self.setWindowIcon(QIcon("icon.png"))
 
         addFilesAction = QAction("Add &files", self)
         addDirAction = QAction("Add &directory", self)
