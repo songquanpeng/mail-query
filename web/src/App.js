@@ -1,6 +1,8 @@
 import React from 'react';
 import axios from 'axios';
 import _ from 'lodash';
+import fileDownload from 'js-file-download';
+
 import {
   Input,
   Card,
@@ -43,6 +45,7 @@ class App extends React.Component {
   };
 
   search = () => {
+    this.setState({ loading: true });
     axios
       .post('/search', {
         keyword: this.state.keyword,
@@ -51,11 +54,25 @@ class App extends React.Component {
       })
       .then(async (res) => {
         console.log(res.data);
+        this.setState({ loading: false });
         this.setState({ mails: res.data });
       })
       .catch((err) => {
         console.log(err);
-        this.showMessage('red', 'Error!', err.toString());
+        this.setState({ loading: false });
+        this.showMessage('red', 'Failed to query', err.toString());
+      });
+  };
+
+  downloadMail = (path) => {
+    axios
+      .post(`/download`, { path })
+      .then((res) => {
+        fileDownload(res.data, 'download.eml');
+      })
+      .catch((err) => {
+        console.log(err);
+        this.showMessage('red', 'Failed to download EML file', err.toString());
       });
   };
 
@@ -96,7 +113,7 @@ class App extends React.Component {
       mails,
       ({ id, path, subject, sender, receiver, date, content }) => {
         return (
-          <Card fluid={true} key={id}>
+          <Card fluid={true} key={id} onClick={() => this.downloadMail(path)}>
             <Card.Content>
               <Card.Header content={subject} />
               <Card.Meta content={`From ${sender} to ${receiver} on ${date}`} />
@@ -126,8 +143,10 @@ class App extends React.Component {
     const { loading } = this.state;
     return (
       <Container>
+        <Header as="h1" textAlign={'center'} style={{ paddingTop: '1em' }}>
+          Mail Query
+        </Header>
         <Input
-          style={{ marginTop: '5em' }}
           loading={loading}
           icon="search"
           onChange={this.onInputChange}
@@ -135,8 +154,8 @@ class App extends React.Component {
           fluid={true}
           placeholder="Search mails..."
         />
-        <Segment>{this.renderMailList()}</Segment>
         {this.renderMessage()}
+        <Segment loading={this.state.loading}>{this.renderMailList()}</Segment>
       </Container>
     );
   }

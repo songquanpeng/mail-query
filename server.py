@@ -45,10 +45,10 @@ class Path(BaseModel):
     path: str
 
 
-@app.post("/getMail")
+@app.post("/download")
 async def process_get_mail(path: Path):
-    result = database.get_mail_by_path(path.path)
-    return result
+    file_path = path.path
+    return FileResponse(file_path)
 
 
 @app.post("/mail")
