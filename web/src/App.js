@@ -11,6 +11,7 @@ import {
   Message,
   Header,
   Icon,
+  Checkbox,
 } from 'semantic-ui-react';
 
 class App extends React.Component {
@@ -53,7 +54,6 @@ class App extends React.Component {
         options: this.state.options,
       })
       .then(async (res) => {
-        console.log(res.data);
         this.setState({ loading: false });
         this.setState({ mails: res.data });
       })
@@ -125,6 +125,40 @@ class App extends React.Component {
     );
   }
 
+  renderOptions() {
+    const options = [
+      'subject',
+      'sender',
+      'receiver',
+      'date',
+      'content',
+      'attachment name',
+      'attachment content',
+    ];
+    const items = [];
+    for (const [index, value] of options.entries()) {
+      items.push(
+        <Checkbox
+          key={index}
+          label={value}
+          name={value}
+          checked={this.state.options[index]}
+          onClick={() => {
+            this.clickCheckbox(index);
+          }}
+          style={{ marginRight: '8px' }}
+        />
+      );
+    }
+    return <Container style={{ paddingTop: '8px' }}>{items}</Container>;
+  }
+
+  clickCheckbox = (index) => {
+    let options = this.state.options;
+    options[index] = !options[index];
+    this.setState({ options });
+  };
+
   renderMessage() {
     const { message } = this.state;
     if (message.visible) {
@@ -154,6 +188,7 @@ class App extends React.Component {
           fluid={true}
           placeholder="Search mails..."
         />
+        {this.renderOptions()}
         {this.renderMessage()}
         <Segment loading={this.state.loading}>{this.renderMailList()}</Segment>
       </Container>
