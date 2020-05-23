@@ -35,7 +35,7 @@ class Search(BaseModel):
     options: list
 
 
-@app.get("/search")
+@app.post("/search")
 async def process_search(search: Search):
     result = database.query(search.keyword, search.limit, search.options)
     return result
@@ -45,7 +45,7 @@ class Path(BaseModel):
     path: str
 
 
-@app.get("/mail")
+@app.post("/getMail")
 async def process_get_mail(path: Path):
     result = database.get_mail_by_path(path.path)
     return result

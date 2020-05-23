@@ -1,6 +1,7 @@
 # Quick Mail Query
-## Install Dependencies
+## Some Commands
 `pip install -r requirements.txt`
+`uvicorn server:app --reload --port`
 
 ## TODO List
 - [x] Generate eml file with attachments for testing. (QQ mail website can export mail to eml.)
