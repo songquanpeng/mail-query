@@ -57,13 +57,17 @@ def insert(mail: dict):
         print(e)
 
 
-def query(keyword: str, limit=-1, option=None) -> list:
+def query(keyword: str, limit=-1, option=None, more=True) -> list:
     if not cursor:
         init()
     start = time.time()
     print("Processing query ...", end=" ")
     option = [True] * 7 if option is None else option
-    sql = f'select path from mails where "subject" like "%{keyword}%" '
+    sql = ""
+    if more:
+        sql += f'select id, path, subject, sender, receiver, "date", content from mails where "subject" like "%{keyword}%" '
+    else:
+        sql += f'select path from mails where "subject" like "%{keyword}%" '
     sql += (f'or "from" like "%{keyword}%" ' if option[1] else "")
     sql += (f'or "to" like "%{keyword}%" ' if option[2] else "")
     sql += (f'or "date" like "%{keyword}%" ' if option[3] else "")
@@ -72,10 +76,22 @@ def query(keyword: str, limit=-1, option=None) -> list:
     sql += (f'or "attachment_content" like "%{keyword}%" ' if option[6] else "")
     if limit >= 1:
         sql += f'limit {limit}'
-    paths = cursor.execute(sql)
+    rows = cursor.execute(sql)
     result = []
-    for path in paths:
-        result.append(path[0])
+    for row in rows:
+        if more:
+            mail = {
+                "id": row[0],
+                "path": row[1],
+                "subject": row[2],
+                "sender": row[3],
+                "receiver": row[4],
+                "date": row[5],
+                "content": row[6][:200]
+            }
+            result.append(mail)
+        else:
+            result.append(row[0])
     end = time.time()
     print(f"Done, time cost: {end - start}")
     return result

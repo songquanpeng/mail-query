@@ -37,7 +37,7 @@ class Search(BaseModel):
 
 @app.post("/search")
 async def process_search(search: Search):
-    result = database.query(search.keyword, search.limit, search.options)
+    result = database.query(search.keyword, search.limit, search.options, True)
     return result
 
 
@@ -69,4 +69,4 @@ async def upload_eml(files: List[UploadFile] = File(...)):
 app.mount("/", StaticFiles(directory="web/build"), name="static")
 
 if __name__ == '__main__':
-    uvicorn.run(app, host="127.0.0.1", port=3000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
