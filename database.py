@@ -41,6 +41,8 @@ def close():
 
 def insert(mail: dict):
     global cursor
+    if not cursor:
+        init()
     attachment_name = ""
     attachment_content = ""
     for attachment in mail["attachments"]:

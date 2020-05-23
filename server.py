@@ -1,11 +1,12 @@
-from typing import List
+import os
+import time
+import database
 
+from typing import List
 from fastapi import FastAPI, File, UploadFile
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.responses import FileResponse
-
-from database import query, get_mail_by_path
 from util import parse
 
 
@@ -35,7 +36,7 @@ class Search(BaseModel):
 
 @app.get("/search")
 async def process_search(search: Search):
-    result = query(search.keyword, search.limit, search.options)
+    result = database.query(search.keyword, search.limit, search.options)
     return result
 
 
@@ -45,15 +46,23 @@ class Path(BaseModel):
 
 @app.get("/mail")
 async def process_get_mail(path: Path):
-    result = get_mail_by_path(path.path)
+    result = database.get_mail_by_path(path.path)
     return result
 
 
 @app.post("/mail")
 async def upload_eml(files: List[UploadFile] = File(...)):
+    base_path = './data'
+    database.init()
     for file in files:
-        filename = file.filename
-    return {"file_sizes": [file.filename for file in files]}
+        filename = str(time.time()) + " " + file.filename
+        path = os.path.join(base_path, filename)
+        with open(path, 'wb') as f:
+            f.write(file.file.read())
+        parsed_mail = parse(path)
+        database.insert(parsed_mail)
+    database.close()
+    return {"status": "OK"}
 
 
 app.mount("/", StaticFiles(directory="static"), name="static")
