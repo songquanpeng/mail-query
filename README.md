@@ -20,7 +20,7 @@
     - [x] Use multi-processes accelerate the query.
  - [ ] Make full use of the given memory to speed up the query.
  - [x] Use FastAPI to create a http server.
- - [ ] Use Vue to create a web application.
+ - [ ] Use React to create a web application.
  
 ## Build
  ```shell script

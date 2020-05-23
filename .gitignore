@@ -2,7 +2,6 @@
 *.pyc
 .vscode
 *.eml
-data
 temp*
 data.db
 data.db-journal

@@ -227,7 +227,7 @@ class MainWindow(QMainWindow):
     def init_ui(self):
         self.resize(1200, 900)
         self.setWindowTitle("Quick Mail Query")
-        self.setWindowIcon(QIcon("static/icon.png"))
+        self.setWindowIcon(QIcon("./icon.png"))
 
         addFilesAction = QAction("Add &files", self)
         addDirAction = QAction("Add &directory", self)

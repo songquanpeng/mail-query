@@ -26,7 +26,7 @@ app = FastAPI()
 
 @app.get('/')
 def index():
-    return FileResponse('static/index.html')
+    return FileResponse('web/build/index.html')
 
 
 class Search(BaseModel):
@@ -66,7 +66,7 @@ async def upload_eml(files: List[UploadFile] = File(...)):
     return {"status": "OK"}
 
 
-app.mount("/", StaticFiles(directory="static"), name="static")
+app.mount("/", StaticFiles(directory="web/build"), name="static")
 
 if __name__ == '__main__':
     uvicorn.run(app, host="127.0.0.1", port=3000)
