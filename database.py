@@ -22,18 +22,21 @@ def init(database_path='./data.db'):
     # initialize the SQLite database and return the cursor
     global connection
     global cursor
-    connection = sqlite3.connect(database_path)
-    cursor = connection.cursor()
-    cursor.execute(create_mails_table)
+    if not connection:
+        connection = sqlite3.connect(database_path)
+        cursor = connection.cursor()
+        cursor.execute(create_mails_table)
     return cursor
 
 
 def close():
     global connection
     global cursor
-    cursor.close()
-    connection.commit()
-    connection.close()
+    if cursor:
+        cursor.close()
+    if connection:
+        connection.commit()
+        connection.close()
 
 
 def insert(mail: dict):
@@ -53,6 +56,8 @@ def insert(mail: dict):
 
 
 def query(keyword: str, limit=-1, option=None) -> list:
+    if not cursor:
+        init()
     start = time.time()
     print("Processing query ...", end=" ")
     option = [True] * 7 if option is None else option
@@ -72,6 +77,25 @@ def query(keyword: str, limit=-1, option=None) -> list:
     end = time.time()
     print(f"Done, time cost: {end - start}")
     return result
+
+
+def get_mail_by_path(path: str) -> dict:
+    if not cursor:
+        init()
+    sql = f'select * from mails where "path"="{path}"'
+    result = cursor.execute(sql).fetchone()
+    mail = {
+        "id": result[0],
+        "path": result[1],
+        "subject": result[2],
+        "sender": result[3],
+        "receiver": result[4],
+        "date": result[5],
+        "content": result[6],
+        "attachments_name": result[7],
+        "attachments_content": result[8]
+    }
+    return mail
 
 
 def main():

@@ -1,3 +1,9 @@
+starlette
+pydantic
+fastapi
+aiofiles
+python-multipart
+uvicorn
 QtPy==1.9.0
 docx2txt==0.8
 pdfminer.six==20200402
