@@ -5,7 +5,7 @@
 temp*
 data.db
 data.db-journal
-build
+/build
 dist
 main.spec
 venv
