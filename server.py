@@ -1,6 +1,7 @@
 import os
 import time
 import database
+import uvicorn
 
 from typing import List
 from fastapi import FastAPI, File, UploadFile
@@ -66,3 +67,6 @@ async def upload_eml(files: List[UploadFile] = File(...)):
 
 
 app.mount("/", StaticFiles(directory="static"), name="static")
+
+if __name__ == '__main__':
+    uvicorn.run(app, host="127.0.0.1", port=3000)

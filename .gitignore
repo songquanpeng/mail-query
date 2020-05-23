@@ -5,6 +5,8 @@
 data
 temp*
 data.db
+data.db-journal
 build
 dist
 main.spec
+venv
