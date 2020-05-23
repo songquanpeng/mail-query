@@ -1,6 +1,6 @@
 import glob
 import time
-from util import parse
+from utils.utils import parse
 from concurrent.futures import ProcessPoolExecutor
 
 # priority: subject > form, to, date > content > attachments' filename > attachments' content

@@ -1,6 +1,6 @@
 import os
 import time
-import database
+from utils import database
 import uvicorn
 
 from typing import List
@@ -8,7 +8,7 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.responses import FileResponse
-from util import parse
+from utils.utils import parse
 
 
 class Mail(BaseModel):

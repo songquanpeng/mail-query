@@ -8,8 +8,8 @@ from PyQt5.QtWidgets import QLineEdit, QWidget, QListWidget, QLabel, QPushButton
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QIntValidator, QIcon
 
-from database import init, close, insert, query
-from util import parse
+from utils.database import init, close, insert, query
+from utils.utils import parse
 
 
 class LoadThread(QThread):
@@ -227,7 +227,7 @@ class MainWindow(QMainWindow):
     def init_ui(self):
         self.resize(1200, 900)
         self.setWindowTitle("Quick Mail Query")
-        self.setWindowIcon(QIcon("./icon.png"))
+        self.setWindowIcon(QIcon("./static/icon.png"))
 
         addFilesAction = QAction("Add &files", self)
         addDirAction = QAction("Add &directory", self)
