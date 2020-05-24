@@ -15,40 +15,32 @@ CREATE TABLE IF NOT EXISTS "mails"(
 );
 """
 connection = None
-cursor = None
+db_path = './data.db'
 
 
-def init(database_path='./data.db'):
-    # initialize the SQLite database and return the cursor
+def init(database_path=db_path):
+    # initialize the SQLite database and return the connection
     global connection
-    global cursor
     if not connection:
         connection = sqlite3.connect(database_path)
         cursor = connection.cursor()
         cursor.execute(create_mails_table)
-    return cursor
+    return connection
 
 
-def close():
-    global connection
-    global cursor
-    if cursor:
-        cursor.close()
-    if connection:
-        connection.commit()
-        connection.close()
+def create_connection(database_path=db_path):
+    return sqlite3.connect(database_path)
 
 
-def insert(mail: dict):
-    global cursor
-    if not cursor:
-        init()
+def insert(mail: dict, conn=connection):
+    # You must call conn.commit() after all insertions are done
     attachment_name = ""
     attachment_content = ""
     for attachment in mail["attachments"]:
         attachment_name += attachment['name'] + "\n"
         attachment_content += attachment['content'] + "\n"
     try:
+        cursor = conn.cursor()
         cursor.execute(
             """insert into mails (path, subject, sender, receiver, 'date', content, attachment_name, attachment_content) 
             values (?,?,?,?,?,?,?,?)""", (mail['path'], mail['subject'], mail['from'], mail['to'], mail['date'],
@@ -57,9 +49,7 @@ def insert(mail: dict):
         print(e)
 
 
-def query(keyword: str, limit=-1, option=None, more=True) -> list:
-    if not cursor:
-        init()
+def query(keyword: str, limit=-1, option=None, more=False, conn=connection) -> list:
     start = time.time()
     print("Processing query ...", end=" ")
     option = [True] * 7 if option is None else option
@@ -68,14 +58,15 @@ def query(keyword: str, limit=-1, option=None, more=True) -> list:
         sql += f'select id, path, subject, sender, receiver, "date", content from mails where "subject" like "%{keyword}%" '
     else:
         sql += f'select path from mails where "subject" like "%{keyword}%" '
-    sql += (f'or "from" like "%{keyword}%" ' if option[1] else "")
-    sql += (f'or "to" like "%{keyword}%" ' if option[2] else "")
+    sql += (f'or "sender" like "%{keyword}%" ' if option[1] else "")
+    sql += (f'or "receiver" like "%{keyword}%" ' if option[2] else "")
     sql += (f'or "date" like "%{keyword}%" ' if option[3] else "")
     sql += (f'or "content" like "%{keyword}%" ' if option[4] else "")
     sql += (f'or "attachment_name" like "%{keyword}%" ' if option[5] else "")
     sql += (f'or "attachment_content" like "%{keyword}%" ' if option[6] else "")
     if limit >= 1:
         sql += f'limit {limit}'
+    cursor = conn.cursor()
     rows = cursor.execute(sql)
     result = []
     for row in rows:
@@ -97,10 +88,9 @@ def query(keyword: str, limit=-1, option=None, more=True) -> list:
     return result
 
 
-def get_mail_by_path(path: str) -> dict:
-    if not cursor:
-        init()
+def get_mail_by_path(path: str, conn=connection) -> dict:
     sql = f'select * from mails where "path"="{path}"'
+    cursor = conn.cursor()
     result = cursor.execute(sql).fetchone()
     mail = {
         "id": result[0],
@@ -120,8 +110,7 @@ def main():
     init()
     result = query("com")
     print(result)
-    close()
-    pass
+    connection.close()
 
 
 if __name__ == '__main__':

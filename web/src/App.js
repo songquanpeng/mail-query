@@ -12,6 +12,7 @@ import {
   Header,
   Icon,
   Checkbox,
+  Button,
 } from 'semantic-ui-react';
 
 class App extends React.Component {
@@ -23,6 +24,7 @@ class App extends React.Component {
       options: [true, true, true, true, true, true, true],
       mails: [],
       loading: false,
+      uploading: false,
       message: {
         visible: false,
         color: 'red',
@@ -31,6 +33,7 @@ class App extends React.Component {
       },
       searchTypingTimeout: 0,
     };
+    this.fileInputRef = React.createRef();
   }
 
   onInputChange = (e) => {
@@ -43,6 +46,29 @@ class App extends React.Component {
         this.search();
       }, 500),
     });
+  };
+
+  onFileInputChange = (event) => {
+    this.setState({ uploading: true });
+    let files = event.target.files;
+    let form = new FormData();
+    for (let i = 0; i < files.length; ++i) {
+      form.append(`file-${i}.eml`, files[i]);
+    }
+    axios
+      .post('/upload', form, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      .then((res) => {
+        this.setState({ uploading: false });
+        console.log(res);
+      })
+      .catch((err) => {
+        console.error(err);
+        this.showMessage('red', 'Failed to upload file', err.toString());
+      });
   };
 
   search = () => {
@@ -58,7 +84,7 @@ class App extends React.Component {
         this.setState({ mails: res.data });
       })
       .catch((err) => {
-        console.log(err);
+        console.error(err);
         this.setState({ loading: false });
         this.showMessage('red', 'Failed to query', err.toString());
       });
@@ -182,15 +208,37 @@ class App extends React.Component {
         </Header>
         <Input
           loading={loading}
-          icon="search"
           onChange={this.onInputChange}
           size="large"
           fluid={true}
           placeholder="Search mails..."
-        />
+          action
+        >
+          <input />
+          <Button
+            animated="vertical"
+            onClick={() => {
+              this.fileInputRef.current.click();
+            }}
+          >
+            <Button.Content hidden>Upload</Button.Content>
+            <Button.Content visible>
+              <Icon name="upload" />
+            </Button.Content>
+          </Button>
+        </Input>
         {this.renderOptions()}
         {this.renderMessage()}
-        <Segment loading={this.state.loading}>{this.renderMailList()}</Segment>
+        <Segment loading={loading}>{this.renderMailList()}</Segment>
+        <input
+          ref={this.fileInputRef}
+          type="file"
+          name="files"
+          accept=".eml"
+          multiple="multiple"
+          onChange={this.onFileInputChange}
+          style={{ display: 'none' }}
+        />
       </Container>
     );
   }

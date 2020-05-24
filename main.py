@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QLineEdit, QWidget, QListWidget, QLabel, QPushButton
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QIntValidator, QIcon
 
-from utils.database import init, close, insert, query
+from utils.database import init, insert, query, create_connection
 from utils.utils import parse
 
 
@@ -36,12 +36,11 @@ class LoadThread(QThread):
 
             self.fileList = fileList
 
-            init()
+            conn = create_connection()
             for file in self.fileList:
                 mail = parse(file)
-                insert(mail)
-            close()
-
+                insert(mail, conn)
+            conn.commit()
             self.trigger.emit("success")
         except OSError as e:
             self.trigger.emit(e.strerror)
@@ -58,9 +57,8 @@ class SearchThread(QThread):
         self.options = options
 
     def run(self):
-        init()
-        self.result = query(self.keyword, self.limit, self.options)
-        close()
+        conn = create_connection()
+        self.result = query(self.keyword, self.limit, self.options, conn=conn)
         self.trigger.emit()
 
 

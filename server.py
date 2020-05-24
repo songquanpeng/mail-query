@@ -51,18 +51,18 @@ async def process_get_mail(path: Path):
     return FileResponse(file_path)
 
 
-@app.post("/mail")
+@app.post("/upload")
 async def upload_eml(files: List[UploadFile] = File(...)):
     base_path = './data'
-    database.init()
+    conn = database.init()
     for file in files:
         filename = str(time.time()) + " " + file.filename
         path = os.path.join(base_path, filename)
         with open(path, 'wb') as f:
             f.write(file.file.read())
         parsed_mail = parse(path)
-        database.insert(parsed_mail)
-    database.close()
+        database.insert(parsed_mail, conn)
+    conn.commit()
     return {"status": "OK"}
 
 

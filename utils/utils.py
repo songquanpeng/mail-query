@@ -69,7 +69,7 @@ def process_attachment(name: str, data: bytes) -> str:
         except UnicodeDecodeError:
             print("unable to decode the given text by 'utf-8'")
     else:
-        temp_file_path = "../data/temp"
+        temp_file_path = "./data/temp"
         with open(temp_file_path, mode='wb') as temp:
             temp.write(data)
         if name.endswith(".docx"):
