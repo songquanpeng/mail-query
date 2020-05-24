@@ -73,7 +73,7 @@ def process_attachment(name: str, data: bytes) -> str:
         with open(temp_file_path, mode='wb') as temp:
             temp.write(data)
         if name.endswith(".docx"):
-            result = docx2txt.process("./temp")
+            result = docx2txt.process(temp_file_path)
         elif name.endswith(".pdf"):
             output_string = StringIO()
             with open(temp_file_path, mode='rb') as pdf:
@@ -106,7 +106,7 @@ def main():
     for file in files:
         mail = parse(file)
         database.insert(mail)
-    database.close()
+
 
 
 if __name__ == '__main__':

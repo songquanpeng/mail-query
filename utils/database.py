@@ -25,6 +25,7 @@ def init(database_path=db_path):
         connection = sqlite3.connect(database_path)
         cursor = connection.cursor()
         cursor.execute(create_mails_table)
+        connection.commit()
     return connection
 
 

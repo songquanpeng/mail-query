@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import glob
 
 from PyQt5.QtWidgets import QLineEdit, QWidget, QListWidget, QLabel, QPushButton, QCheckBox, \
     QHBoxLayout, QGridLayout, QFileDialog, QMessageBox, QApplication, QStatusBar, QMainWindow, \
@@ -21,29 +22,26 @@ class LoadThread(QThread):
         self.files = files
 
     def run(self):
+        conn = create_connection()
         try:
             files = self.files
             fileList = []
             if type(files) is str:
-                for file in os.listdir(files):
-                    if file.endswith(".eml"):
-                        fileList.append(files + "/" + file)
+                fileList = glob.glob(f"{files}/*.eml")
             elif type(files) is list:
                 fileList = files
             else:
                 self.trigger.emit("Load files failed.")
                 return
-
             self.fileList = fileList
-
-            conn = create_connection()
             for file in self.fileList:
                 mail = parse(file)
                 insert(mail, conn)
-            conn.commit()
             self.trigger.emit("success")
         except OSError as e:
             self.trigger.emit(e.strerror)
+        finally:
+            conn.commit()
 
 
 class SearchThread(QThread):
@@ -156,6 +154,7 @@ class App(QWidget):
             self.statusBar.showMessage("Add directory canceled.")
 
     def load_files(self, files):
+        self.statusBar.showMessage("Loading, please hold on...")
         self.load_thread = LoadThread(files)
         self.load_thread.trigger.connect(self.on_load_thread_returned)
         self.timer = time.time()
@@ -271,6 +270,7 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == '__main__':
+    init()
     app = QApplication(sys.argv)
     ex = MainWindow()
     ex.show()

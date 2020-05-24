@@ -10,6 +10,8 @@ from pydantic import BaseModel
 from starlette.responses import FileResponse
 from utils.utils import parse
 
+conn = database.create_connection()
+
 
 class Mail(BaseModel):
     subject: str
@@ -37,7 +39,7 @@ class Search(BaseModel):
 
 @app.post("/search")
 async def process_search(search: Search):
-    result = database.query(search.keyword, search.limit, search.options, True)
+    result = database.query(search.keyword, search.limit, search.options, True, conn)
     return result
 
 
@@ -54,7 +56,6 @@ async def process_get_mail(path: Path):
 @app.post("/upload")
 async def upload_eml(files: List[UploadFile] = File(...)):
     base_path = './data'
-    conn = database.init()
     for file in files:
         filename = str(time.time()) + " " + file.filename
         path = os.path.join(base_path, filename)
