@@ -53,7 +53,7 @@ class App extends React.Component {
     let files = event.target.files;
     let form = new FormData();
     for (let i = 0; i < files.length; ++i) {
-      form.append(`file-${i}.eml`, files[i]);
+      form.append(`files`, files[i]);
     }
     axios
       .post('/upload', form, {
@@ -64,6 +64,7 @@ class App extends React.Component {
       .then((res) => {
         this.setState({ uploading: false });
         console.log(res);
+        this.showMessage('green', 'Success', 'You files have been uploaded');
       })
       .catch((err) => {
         console.error(err);
@@ -102,7 +103,7 @@ class App extends React.Component {
       });
   };
 
-  showMessage = (color, header, content) => {
+  showMessage = (color, header, content, hold = false) => {
     this.setState({
       message: {
         visible: true,
@@ -111,6 +112,9 @@ class App extends React.Component {
         content,
       },
     });
+    if (!hold) {
+      setTimeout(this.closeMessage, 3000);
+    }
   };
 
   closeMessage = () => {
