@@ -44,13 +44,15 @@ def insert(mail: dict, conn=connection):
         cursor = conn.cursor()
         cursor.execute(
             """insert into mails (path, subject, sender, receiver, 'date', content, attachment_name, attachment_content) 
-            values (?,?,?,?,?,?,?,?)""", (mail['path'], mail['subject'], mail['from'], mail['to'], mail['date'],
-                                          mail['content'], attachment_name, attachment_content))
+            values (?,?,?,?,?,?,?,?)""",
+            (mail['path'], mail['subject'], mail['from'], mail['to'], mail['date'],
+             mail['content'], attachment_name, attachment_content))
     except sqlite3.IntegrityError as e:
         print(e)
 
 
-def query(keyword: str, limit=-1, option=None, more=False, conn=connection) -> list:
+def query(keyword: str, limit=-1, option=None, more=False, conn=connection, full_content=False) \
+        -> list:
     start = time.time()
     print("Processing query ...", end=" ")
     option = [True] * 7 if option is None else option
@@ -79,7 +81,7 @@ def query(keyword: str, limit=-1, option=None, more=False, conn=connection) -> l
                 "sender": row[3],
                 "receiver": row[4],
                 "date": row[5],
-                "content": row[6][:200]
+                "content": row[6] if full_content else row[6][:200]
             }
             result.append(mail)
         else:

@@ -5,7 +5,7 @@ import glob
 
 from PyQt5.QtWidgets import QLineEdit, QWidget, QListWidget, QLabel, QPushButton, QCheckBox, \
     QHBoxLayout, QGridLayout, QFileDialog, QMessageBox, QApplication, QStatusBar, QMainWindow, \
-    QAction
+    QAction, QTextBrowser, QListWidgetItem
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QIntValidator, QIcon
 
@@ -25,7 +25,6 @@ class LoadThread(QThread):
         conn = create_connection()
         try:
             files = self.files
-            fileList = []
             if type(files) is str:
                 fileList = glob.glob(f"{files}/*.eml")
             elif type(files) is list:
@@ -56,7 +55,8 @@ class SearchThread(QThread):
 
     def run(self):
         conn = create_connection()
-        self.result = query(self.keyword, self.limit, self.options, conn=conn)
+        self.result = query(self.keyword, limit=self.limit, option=self.options, more=True,
+                            conn=conn, full_content=True)
         self.trigger.emit()
 
 
@@ -77,6 +77,7 @@ class App(QWidget):
         self.searchEdit = QLineEdit()
         self.searchBtn = QPushButton("Search")
         self.listWidget = QListWidget()
+        self.textBrowser = QTextBrowser();
         self.statusBar = QStatusBar()
 
         self.searchEdit.setObjectName("keyword")
@@ -85,7 +86,8 @@ class App(QWidget):
         self.searchEdit.textChanged.connect(self.on_edit_changed)
         self.searchEdit.returnPressed.connect(self.search)
         self.searchBtn.clicked.connect(self.search)
-        self.listWidget.itemDoubleClicked.connect(self.open_file)
+        self.listWidget.itemClicked.connect(self.on_list_item_clicked)
+        self.listWidget.itemDoubleClicked.connect(self.on_list_item_double_clicked)
 
         self.init_ui()
         self.statusBar.showMessage("Input keyword to query.")
@@ -115,6 +117,11 @@ class App(QWidget):
         optionsHBox = QHBoxLayout()
         optionsHBox.setSpacing(10)
 
+        viewHBox = QHBoxLayout()
+        viewHBox.setSpacing(10)
+        viewHBox.addWidget(self.listWidget)
+        viewHBox.addWidget(self.textBrowser)
+
         for index, name in enumerate(self.options_names):
             checkbox = QCheckBox()
             checkbox.setObjectName(str(index))
@@ -133,7 +140,7 @@ class App(QWidget):
         grid.addItem(optionsHBox, 2, 1, 1, 2)
         grid.addWidget(otherLabel, 3, 0)
         grid.addItem(otherHBox, 3, 1, 1, 2)
-        grid.addWidget(self.listWidget, 4, 0, 1, 3)
+        grid.addItem(viewHBox, 4, 0, 1, 3)
         grid.addWidget(self.statusBar, 5, 0, 1, 3)
 
         self.setLayout(grid)
@@ -160,7 +167,11 @@ class App(QWidget):
         self.timer = time.time()
         self.load_thread.start()
 
-    def open_file(self, item):
+    def on_list_item_clicked(self, item: QListWidgetItem):
+        mail = item.data(Qt.UserRole)
+        self.textBrowser.setText(mail["content"])
+
+    def on_list_item_double_clicked(self, item: QListWidgetItem):
         try:
             os.startfile(item.text())
         except OSError as e:
@@ -195,12 +206,21 @@ class App(QWidget):
 
     def on_search_thread_returned(self):
         used_time = time.time() - self.timer
-        result = self.search_thread.result
+        mails = self.search_thread.result
+
         self.listWidget.clear()
-        self.listWidget.addItems(result)
+        for mail in mails:
+            name = os.path.basename(mail["path"])
+            name = os.path.splitext(name)[0]
+
+            item = QListWidgetItem()
+            item.setData(Qt.UserRole, mail)
+            item.setText(name)
+            self.listWidget.addItem(item)
+
         self.searchBtn.setText("Search")
         self.searchBtn.setEnabled(True)
-        self.statusBar.showMessage("Got " + str(len(result)) + " results, query done in "
+        self.statusBar.showMessage("Got " + str(len(mails)) + " results, query done in "
                                    + str(used_time) + " seconds.")
 
     def on_edit_changed(self, text):
