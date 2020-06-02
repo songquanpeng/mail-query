@@ -2,6 +2,8 @@ import os
 import sys
 import time
 import glob
+import webbrowser
+from multiprocessing import Process, ProcessError
 
 from PyQt5.QtWidgets import QLineEdit, QWidget, QListWidget, QLabel, QPushButton, QCheckBox, \
     QHBoxLayout, QGridLayout, QFileDialog, QMessageBox, QApplication, QStatusBar, QMainWindow, \
@@ -11,6 +13,7 @@ from PyQt5.QtGui import QIntValidator, QIcon
 
 from utils.database import init, insert, query, create_connection
 from utils.utils import parse
+from server import serve, host, port
 
 
 class LoadThread(QThread):
@@ -238,6 +241,13 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.app = App()
+
+        self.server_process = None
+
+        self.startServerAction = QAction("&Start server", self)
+        self.stopServerAction = QAction("&Stop server", self)
+        self.stopServerAction.setEnabled(False)
+
         self.setCentralWidget(self.app)
         self.init_ui()
 
@@ -253,6 +263,8 @@ class MainWindow(QMainWindow):
 
         addFilesAction.triggered.connect(self.app.browse_files)
         addDirAction.triggered.connect(self.app.browse_dir)
+        self.startServerAction.triggered.connect(self.start_server)
+        self.stopServerAction.triggered.connect(self.stop_server)
         helpAction.triggered.connect(self.show_help)
         aboutAction.triggered.connect(self.show_about)
 
@@ -261,10 +273,45 @@ class MainWindow(QMainWindow):
         fileMenu.addAction(addFilesAction)
         fileMenu.addAction(addDirAction)
 
+        serverMenu = menuBar.addMenu("&Server")
+        serverMenu.addAction(self.startServerAction)
+        serverMenu.addAction(self.stopServerAction)
+
         aboutMenu = menuBar.addMenu('&About')
         aboutMenu.addAction(helpAction)
         aboutMenu.addSeparator()
         aboutMenu.addAction(aboutAction)
+
+    def start_server(self):
+        try:
+            self.server_process = Process(target=serve, daemon=True)
+            self.server_process.start()
+        except ProcessError:
+            self.app.statusBar.showMessage("Failed to create new process for server.")
+        except ValueError:
+            self.app.statusBar.showMessage("Failed to create new process for server.")
+        else:
+            self.startServerAction.setEnabled(False)
+            self.stopServerAction.setEnabled(True)
+
+            url = "%s://%s:%d" % ("http", host, port)
+            self.app.statusBar.showMessage("Server started and listening on %s" % url)
+            webbrowser.open(url, new=2)
+
+    def stop_server(self):
+        if self.server_process is not None:
+            try:
+                self.server_process.terminate()
+                time.sleep(0.1)
+                self.server_process.close()
+            except ProcessError:
+                self.app.statusBar.showMessage("Failed to stop the server process, ProcessError.")
+            except ValueError:
+                self.app.statusBar.showMessage("Cannot close process. Please try again.")
+            else:
+                self.startServerAction.setEnabled(True)
+                self.stopServerAction.setEnabled(False)
+                self.app.statusBar.showMessage("Server stopped.")
 
     def show_help(self):
         QMessageBox.information(self, "Help",
@@ -284,6 +331,7 @@ class MainWindow(QMainWindow):
                                      QMessageBox.Yes | QMessageBox.No,
                                      QMessageBox.No)
         if reply == QMessageBox.Yes:
+            self.stop_server()
             QCloseEvent.accept()
         else:
             QCloseEvent.ignore()

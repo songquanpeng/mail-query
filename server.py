@@ -12,6 +12,9 @@ from utils.utils import parse
 
 conn = database.create_connection()
 
+host = "127.0.0.1"
+port = 8000
+
 
 class Mail(BaseModel):
     subject: str
@@ -69,5 +72,10 @@ async def upload_eml(files: List[UploadFile] = File(...)):
 
 app.mount("/", StaticFiles(directory="web/build"), name="static")
 
+
+def serve():
+    uvicorn.run(app, host=host, port=port)
+
+
 if __name__ == '__main__':
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    serve()
