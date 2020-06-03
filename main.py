@@ -172,11 +172,20 @@ class App(QWidget):
 
     def on_list_item_clicked(self, item: QListWidgetItem):
         mail = item.data(Qt.UserRole)
-        self.textBrowser.setText(mail["content"])
+        subject = mail['subject']
+        sender = mail['sender']
+        receiver = mail['receiver']
+        date = mail['date']
+        content = mail['content']
+
+        preview_text = f"<h1>{subject}</h1><p>date: {date}</p><p>sender: {sender}</p>" \
+                       f"<p>receiver: {receiver}</p>{content if content else '(empty content)'}"
+        self.textBrowser.setText(preview_text)
 
     def on_list_item_double_clicked(self, item: QListWidgetItem):
         try:
-            os.startfile(item.text())
+            path = item.data(Qt.UserRole)['path']
+            os.startfile(path)
         except OSError as e:
             QMessageBox.critical(self, "Error", e.strerror, QMessageBox.Ok,
                                  QMessageBox.Ok)
@@ -287,9 +296,9 @@ class MainWindow(QMainWindow):
             self.server_process = Process(target=serve, daemon=True)
             self.server_process.start()
         except ProcessError:
-            self.app.statusBar.showMessage("Failed to create new process for server.")
+            self.app.statusBar.showMessage("Failed to create new process for server.(ProcessError)")
         except ValueError:
-            self.app.statusBar.showMessage("Failed to create new process for server.")
+            self.app.statusBar.showMessage("Failed to create new process for server.(ValueError)")
         else:
             self.startServerAction.setEnabled(False)
             self.stopServerAction.setEnabled(True)
@@ -305,9 +314,10 @@ class MainWindow(QMainWindow):
                 time.sleep(0.1)
                 self.server_process.close()
             except ProcessError:
-                self.app.statusBar.showMessage("Failed to stop the server process, ProcessError.")
+                self.app.statusBar.showMessage("Failed to stop the server process.(ProcessError)")
             except ValueError:
-                self.app.statusBar.showMessage("Cannot close process. Please try again.")
+                self.app.statusBar.showMessage("Cannot close process. Please try again.("
+                                               "ValueError)")
             else:
                 self.startServerAction.setEnabled(True)
                 self.stopServerAction.setEnabled(False)
